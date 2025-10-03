@@ -1,15 +1,10 @@
 package dsa.sheduler.dsa_sheduler_app.Entity;
 
-import dsa.sheduler.dsa_sheduler_app.util.Constants;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+
 
 
 @Setter
@@ -28,13 +23,19 @@ public class Problem {
     private String problemUrl;
     //@Column(length = 1000)
     private String solutionUrl;
+    @Enumerated(EnumType.STRING)
     private Topic topic; // Array, String, Tree, Graph, etc.
+
+    @Enumerated(EnumType.STRING)
     private Platform platform; // LeetCode, HackerRank, CodeForces, etc.
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
     @Enumerated(EnumType.STRING)
     private Difficulty difficulty;
+
+    @Enumerated(EnumType.STRING)
     private Status status;
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -53,7 +54,7 @@ public class Problem {
     }
 
     public enum Status{
-        PENDING, IN_PROGRESS, COMPLETED, REVISIT
+        PENDING, IN_PROGRESS, COMPLETED
     }
 
 
@@ -74,36 +75,6 @@ public class Problem {
         updatedAt = LocalDateTime.now();
     }
 
-
-    // Spaced repetition intervals (in days)
-    //private static final int[] REVIEW_INTERVALS = {3, 4, 7, 14, 30};
-
-
-
-
-    public void markAsCompleted() {
-        this.completed = true;
-        this.status = Status.COMPLETED;
-        this.lastReviewed = LocalDate.now();
-        this.reviewCount++;
-        this.streak++;
-
-        // Calculate next review date based on spaced repetition
-        if (reviewCount <= Constants.REVIEW_INTERVALS.length) {
-            this.nextReviewDate = LocalDate.now().plusDays(Constants.REVIEW_INTERVALS[reviewCount - 1]);
-        } else {
-            // After going through all intervals, review monthly
-            this.nextReviewDate = LocalDate.now().plusDays(30);
-        }
-    }
-
-    public void markAsNotCompleted() {
-        this.completed = false;
-        this.status = Status.IN_PROGRESS;
-        this.streak = 0;
-        // Keep it in daily schedule until completed
-        this.nextReviewDate = LocalDate.now().plusDays(1);
-    }
 
 
 }

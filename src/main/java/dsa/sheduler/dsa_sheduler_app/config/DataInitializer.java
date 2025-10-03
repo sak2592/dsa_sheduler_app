@@ -29,7 +29,7 @@ public class DataInitializer implements CommandLineRunner {
             problem1.setSolutionUrl("https://github.com/solutions/two-sum");
             problem1.setDifficulty(Problem.Difficulty.EASY);
             problem1.setTopic(Topic.ARRAY);
-            problem1.setStatus(Problem.Status.COMPLETED);
+            problem1.setStatus(Problem.Status.PENDING);
             //problem1.setScheduledDate(LocalDate.now().minusDays(2));
             problem1.setNotes("Used HashMap for O(n) time complexity solution. Space complexity O(n).");
 
@@ -39,7 +39,7 @@ public class DataInitializer implements CommandLineRunner {
             problem2.setProblemUrl("https://leetcode.com/problems/binary-tree-level-order-traversal/");
             problem2.setDifficulty(Problem.Difficulty.MEDIUM);
             problem2.setTopic(Topic.TREE);
-            problem2.setStatus(Problem.Status.IN_PROGRESS);
+            problem2.setStatus(Problem.Status.PENDING);
            // problem2.setScheduledDate(LocalDate.now().plusDays(1));
             problem2.setNotes("Use BFS with queue. Time complexity O(n), space complexity O(n).");
 
@@ -49,7 +49,7 @@ public class DataInitializer implements CommandLineRunner {
             problem3.setProblemUrl("https://leetcode.com/problems/binary-tree-level-order-traversal/");
             problem3.setDifficulty(Problem.Difficulty.MEDIUM);
             problem3.setTopic(Topic.ARRAY);
-            problem3.setStatus(Problem.Status.IN_PROGRESS);
+            problem3.setStatus(Problem.Status.PENDING);
            // problem3.setScheduledDate(LocalDate.now().plusDays(1));
             problem3.setNotes("Use BFS with queue. Time complexity O(n), space complexity O(n).");
 
@@ -60,15 +60,39 @@ public class DataInitializer implements CommandLineRunner {
             problem4.setProblemUrl("https://leetcode.com/problems/binary-tree-level-order-traversal/");
             problem4.setDifficulty(Problem.Difficulty.MEDIUM);
             problem4.setTopic(Topic.ARRAY);
-            problem4.setStatus(Problem.Status.IN_PROGRESS);
+            problem4.setStatus(Problem.Status.PENDING);
             //problem4.setScheduledDate(LocalDate.now().plusDays(1));
             problem4.setNotes("Use BFS with queue. Time complexity O(n), space complexity O(n).");
+
+            Problem problem5 = new Problem();
+            problem5.setTitle("problem 5 ");
+            problem5.setDescription("Between two balls if they are put in his new invented basket. Rick has n empty");
+            problem5.setProblemUrl("https://leetcode.com/problems/binary-tree-level-order-traversal/");
+            problem5.setDifficulty(Problem.Difficulty.HARD);
+            problem5.setTopic(Topic.GRAPH);
+            problem5.setStatus(Problem.Status.PENDING);
+            //problem4.setScheduledDate(LocalDate.now().plusDays(1));
+            problem5.setNotes("Use BFS with queue. Time complexity O(n), space complexity O(n).");
+
+
+            Problem problem6 = new Problem();
+            problem6.setTitle("problem 6 ");
+            problem6.setDescription("Between two balls if they are put in his new invented basket. Rick has n empty");
+            problem6.setProblemUrl("https://leetcode.com/problems/binary-tree-level-order-traversal/");
+            problem6.setDifficulty(Problem.Difficulty.HARD);
+            problem6.setTopic(Topic.GRAPH);
+            problem6.setStatus(Problem.Status.PENDING);
+            //problem4.setScheduledDate(LocalDate.now().plusDays(1));
+            problem6.setNotes("Use BFS with queue. Time complexity O(n), space complexity O(n).");
+
 
 
             repository.save(problem1);
             repository.save(problem2);
             repository.save(problem3);
             repository.save(problem4);
+            repository.save(problem5);
+            repository.save(problem6);
 
             System.out.println("Sample data initialized successfully!");
         }

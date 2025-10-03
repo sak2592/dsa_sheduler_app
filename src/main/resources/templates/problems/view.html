@@ -48,6 +48,16 @@
                 <a th:href="@{/problems}" class="btn btn-secondary">Back to List</a>
             </div>
         </div>
+        <div class="card mb-4" th:if="${problem.nextReviewDate == null}">
+            <div class="card-body text-center">
+                <p class="text-muted">This problem is not in your schedule yet.</p>
+                <form th:action="@{/problems/{id}/add-to-schedule(id=${problem.id})}" method="post">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add to Daily Schedule
+                    </button>
+                </form>
+            </div>
+        </div>
 
         <div class="row">
             <div class="col-md-8">

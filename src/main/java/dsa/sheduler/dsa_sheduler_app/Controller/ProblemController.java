@@ -4,6 +4,7 @@ import dsa.sheduler.dsa_sheduler_app.Entity.Platform;
 import dsa.sheduler.dsa_sheduler_app.Entity.Problem;
 import dsa.sheduler.dsa_sheduler_app.Entity.Topic;
 import dsa.sheduler.dsa_sheduler_app.Service.ProblemService;
+import dsa.sheduler.dsa_sheduler_app.Service.SchedulerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,6 +24,9 @@ public class ProblemController {
 
     @Autowired
     private ProblemService problemService;
+
+    @Autowired
+    private SchedulerService schedulerService;
 
 
     @GetMapping
@@ -57,6 +61,8 @@ public class ProblemController {
             return "problems/form";
         }
         problemService.saveProblem(problem);
+        // Initialize scheduling for the new problem
+        schedulerService.initializeScheduling(problem);
         return "redirect:/problems";
     }
 
@@ -74,6 +80,34 @@ public class ProblemController {
             return "problems/form";
         }
         return "redirect:/problems";
+    }
+
+    // When manually adding a problem to schedule
+    @PostMapping("/{id}/add-to-schedule")
+    public String addToSchedule(@PathVariable Long id) {
+        Optional<Problem> problemOpt = problemService.getProblemById(id);
+        if (problemOpt.isPresent()) {
+            schedulerService.initializeScheduling(problemOpt.get());
+        }
+        return "redirect:/problems/" + id;
+    }
+
+
+    // When resetting a completed problem
+    @PostMapping("/{id}/reset-schedule")
+    public String resetAndReschedule(@PathVariable Long id) {
+        Optional<Problem> problemOpt = problemService.getProblemById(id);
+        if (problemOpt.isPresent()) {
+            Problem problem = problemOpt.get();
+            problem.setStatus(Problem.Status.PENDING);
+            problem.setCompleted(false);
+            problem.setNextReviewDate(LocalDate.now());
+            problemService.saveProblem(problem);
+
+            // Re-initialize scheduling
+            schedulerService.initializeScheduling(problem);
+        }
+        return "redirect:/problems/" + id;
     }
 
     // Update problem
@@ -138,14 +172,6 @@ public class ProblemController {
     }
 
 
-    // Show upcoming problems
-    @GetMapping("/upcoming")
-    public String getUpcomingProblems(Model model) {
-       // model.addAttribute("problems", problemService.getUpcomingProblems());
-        model.addAttribute("today", LocalDate.now());
-        model.addAttribute("showUpcoming", true);
-        return "problems/list";
-    }
 
     // Search problems
     @GetMapping("/search")

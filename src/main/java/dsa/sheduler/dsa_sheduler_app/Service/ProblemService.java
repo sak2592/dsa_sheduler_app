@@ -92,7 +92,8 @@ public class ProblemService {
         problem.setLastReviewed(LocalDate.now());
         reviewC=reviewC+1;
         problem.setReviewCount(reviewC);
-        problem.setStreak(strk++);
+        strk=strk+1;
+        problem.setStreak(strk);
 
 
         // Calculate next review date based on spaced repetition
@@ -122,7 +123,7 @@ public class ProblemService {
                 .orElseThrow(() -> new RuntimeException("Problem not found with id: " + id));
         int reviewC=problem.getReviewCount();
         problem.setCompleted(false);
-        problem.setStatus(Problem.Status.IN_PROGRESS);
+        problem.setStatus(Problem.Status.PENDING);
         problem.setNextReviewDate(LocalDate.now());
         problem.setReviewCount(reviewC);
         problem.setStreak(0);

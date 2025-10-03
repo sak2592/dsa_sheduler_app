@@ -35,6 +35,13 @@ public class SchedulerController {
         return "schedule/daily";
     }
 
+    @GetMapping("/refresh")
+    public String refreshDailySchedule() {
+        // Manual refresh endpoint
+        schedulerService.generateDailySchedule();
+        return "redirect:/schedule/daily";
+    }
+
     @PostMapping("/complete/{id}")
     public String markProblemCompleted(@PathVariable Long id) {
         schedulerService.updateProblemStatus(id, true);
@@ -61,12 +68,4 @@ public class SchedulerController {
         return "redirect:/schedule/daily";
     }
 
-
-    @GetMapping("/stats")
-    public String getSchedulingStats(Model model) {
-        List<Problem> dailyProblems = schedulerService.getTodaysProblems();
-        model.addAttribute("dailyProblems", dailyProblems);
-        model.addAttribute("dailyCount", dailyProblems.size());
-        return "schedule/stats";
-    }
 }

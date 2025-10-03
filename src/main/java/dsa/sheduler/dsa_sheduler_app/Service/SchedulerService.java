@@ -2,6 +2,7 @@ package dsa.sheduler.dsa_sheduler_app.Service;
 
 import dsa.sheduler.dsa_sheduler_app.Entity.Problem;
 import dsa.sheduler.dsa_sheduler_app.Entity.Topic;
+import dsa.sheduler.dsa_sheduler_app.util.Constants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,53 +17,107 @@ public class SchedulerService {
     @Autowired
     private ProblemService problemService;
 
-    private static final int DAILY_PROBLEM_COUNT = 4;
 
-    /**
-     * Generate daily problem set - ALWAYS include problems due for review
-     */
-    public List<Problem> generateDailyProblemSet() {
-        List<Problem> allProblems = problemService.getAllProblems();
-        LocalDate today = LocalDate.now();
+        /**
+         * Generate daily problem set - ALWAYS include problems due for review
+         */
+        public List<Problem> generateDailyProblemSet() {
+            List<Problem> allProblems = problemService.getAllProblems();
+            LocalDate today = LocalDate.now();
 
-        // Get problems that are due for review today
-        List<Problem> dueProblems = allProblems.stream()
-                .filter(problem -> problem.getNextReviewDate() != null)
-                .filter(problem -> !problem.getNextReviewDate().isAfter(today))
-                .collect(Collectors.toList());
+            // Get problems that are due for review today
+            List<Problem> dueProblems = allProblems.stream()
+                    .filter(problem -> problem.getNextReviewDate() != null)
+                    .filter(problem -> !problem.getNextReviewDate().isAfter(today))
+                    .collect(Collectors.toList());
 
-        // Separate by completion status
-        List<Problem> pendingProblems = dueProblems.stream()
-                .filter(p -> !p.isCompleted())
-                .collect(Collectors.toList());
+            System.out.println("Due problems: " + dueProblems.size());
 
-        List<Problem> reviewProblems = dueProblems.stream()
-                .filter(Problem::isCompleted)
-                .collect(Collectors.toList());
+            // Separate by completion status
+            List<Problem> pendingProblems = dueProblems.stream()
+                    .filter(p -> p.getStatus() == Problem.Status.PENDING && !p.isCompleted())
+                    .collect(Collectors.toList());
 
-        List<Problem> dailySet = new ArrayList<>();
+            System.out.println("Pending problems: " + pendingProblems.size());
 
-        // Priority 1: All pending problems (incomplete ones)
-        dailySet.addAll(pendingProblems);
+            List<Problem> inProgressProblems = dueProblems.stream()
+                    .filter(p -> p.getStatus() == Problem.Status.IN_PROGRESS)
+                    .collect(Collectors.toList());
 
-        // Priority 2: Fill remaining slots with review problems
-        if (dailySet.size() < DAILY_PROBLEM_COUNT) {
-            int remainingSlots = DAILY_PROBLEM_COUNT - dailySet.size();
-            List<Problem> selectedReviews = selectMixedReviewProblems(reviewProblems, remainingSlots);
-            dailySet.addAll(selectedReviews);
+            System.out.println("In-progress problems: " + inProgressProblems.size());
+
+            List<Problem> reviewProblems = dueProblems.stream()
+                    .filter(Problem::isCompleted)
+                    .collect(Collectors.toList());
+
+            System.out.println("Review problems: " + reviewProblems.size());
+
+            List<Problem> dailySet = new ArrayList<>();
+
+            // Priority 1: All pending problems (incomplete ones)
+            dailySet.addAll(pendingProblems);
+
+            // Priority 2: Problems that are in progress
+            if (dailySet.size() < Constants.DAILY_PROBLEM_COUNT) {
+                int remainingSlots = Constants.DAILY_PROBLEM_COUNT - dailySet.size();
+                List<Problem> selectedInProgress = inProgressProblems.stream()
+                        .limit(remainingSlots)
+                        .collect(Collectors.toList());
+                dailySet.addAll(selectedInProgress);
+            }
+
+            // Priority 3: Fill remaining slots with review problems
+            if (dailySet.size() < Constants.DAILY_PROBLEM_COUNT) {
+                int remainingSlots = Constants.DAILY_PROBLEM_COUNT - dailySet.size();
+                List<Problem> selectedReviews = selectMixedReviewProblems(reviewProblems, remainingSlots);
+                dailySet.addAll(selectedReviews);
+            }
+
+            // Priority 4: If still not enough, add new unscheduled problems
+            if (dailySet.size() < Constants.DAILY_PROBLEM_COUNT) {
+                int remainingSlots = Constants.DAILY_PROBLEM_COUNT - dailySet.size();
+                List<Problem> newProblems = selectNewProblems(allProblems, dailySet, remainingSlots);
+                dailySet.addAll(newProblems);
+            }
+
+            System.out.println("Final daily set: " + dailySet.size() + " problems");
+            return dailySet.stream()
+                    .limit(Constants.DAILY_PROBLEM_COUNT)
+                    .collect(Collectors.toList());
         }
 
-        // Priority 3: If still not enough, add new unscheduled problems
-        if (dailySet.size() < DAILY_PROBLEM_COUNT) {
-            int remainingSlots = DAILY_PROBLEM_COUNT - dailySet.size();
-            List<Problem> newProblems = selectNewProblems(allProblems, dailySet, remainingSlots);
-            dailySet.addAll(newProblems);
+        /**
+         * Scheduled task to ensure daily problems are ready
+         * Runs every day at 6 AM
+         */
+        @Scheduled(cron = "0 0 6 * * ?")
+        public void generateDailySchedule() {
+            System.out.println("Generating daily schedule at " + LocalDate.now());
+            List<Problem> dailyProblems = generateDailyProblemSet();
+
+            // Log the schedule for debugging
+            dailyProblems.forEach(problem ->
+                    System.out.println("Scheduled: " + problem.getTitle() + " - " + problem.getStatus())
+            );
         }
 
-        return dailySet.stream()
-                .limit(DAILY_PROBLEM_COUNT)
-                .collect(Collectors.toList());
-    }
+        /**
+         * Initialize scheduling for new problems
+         */
+        public void initializeScheduling(Problem problem) {
+            if (problem.getNextReviewDate() == null) {
+                problem.setNextReviewDate(LocalDate.now());
+                problemService.saveProblem(problem);
+                System.out.println("Scheduling initialized for: " + problem.getTitle());
+            }
+        }
+
+        /**
+         * Manually trigger schedule generation (for testing/admin purposes)
+         */
+        public void forceGenerateSchedule() {
+            generateDailySchedule();
+        }
 
     /**
      * Select mixed review problems with variety of topics and difficulties
@@ -134,21 +189,13 @@ public class SchedulerService {
      * Update problem completion status
      */
     public void updateProblemStatus(Long problemId, boolean completed) {
-        Optional<Problem> problemOpt = problemService.getProblemById(problemId);
-        if (problemOpt.isPresent()) {
-            Problem problem = problemOpt.get();
 
-            if (completed) {
-                problem.markAsCompleted();
-                System.out.println("Marked problem as completed: " + problem.getTitle());
-            } else {
-                problem.markAsNotCompleted();
-                System.out.println("Marked problem as incomplete: " + problem.getTitle());
-            }
-
-            problemService.saveProblem(problem);
-            System.out.println("Problem saved with completed status: " + problem.isCompleted());
+        if(completed){
+            problemService.markProblemAsCompleted(problemId);
+        }else{
+            problemService.markProblemAsNotCompleted(problemId);
         }
+
     }
 
     /**
@@ -158,23 +205,4 @@ public class SchedulerService {
         return generateDailyProblemSet();
     }
 
-    /**
-     * Initialize scheduling for new problems
-     */
-    public void initializeScheduling(Problem problem) {
-        if (problem.getNextReviewDate() == null) {
-            problem.setNextReviewDate(LocalDate.now());
-            problemService.saveProblem(problem);
-        }
-    }
-
-    /**
-     * Scheduled task to ensure daily problems are ready
-     * Runs every day at 6 AM
-     */
-    @Scheduled(cron = "0 0 6 * * ?")
-    public void generateDailySchedule() {
-        // This ensures the daily set is ready each morning
-        generateDailyProblemSet();
-    }
 }
