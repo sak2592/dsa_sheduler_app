@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title th:text="${problem.id} ? 'Edit Problem' : 'Add Problem'">Problem Form</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 th:text="${problem.id} ? 'Edit DSA Problem' : 'Add New DSA Problem'">Problem Form</h2>
+                </div>
+                <div class="card-body">
+
+                    <form th:action="${problem.id != null} ? @{/problems/{id}(id=${problem.id})} : @{/problems}"
+                          method="post"
+                          th:object="${problem}">
+                    <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="title" class="form-label">Problem Title *</label>
+                                <input type="text" class="form-control" id="title" th:field="*{title}"
+                                       placeholder="Enter problem title" required>
+                                <div th:if="${#fields.hasErrors('title')}" class="text-danger">
+                                    <span th:errors="*{title}">Title error</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="topic" class="form-label">Topic *</label>
+                                <select class="form-select" id="topic" th:field="*{topic}" required>
+                                    <option value="">Select Topic</option>
+                                    <option th:each="topic : ${topics}"
+                                            th:value="${topic}"
+                                            th:text="${topic}">Topic</option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('topic')}" class="text-danger">
+                                    <span th:errors="*{topic}">Topic error</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="difficulty" class="form-label">Difficulty *</label>
+                                <select class="form-select" id="difficulty" th:field="*{difficulty}" required>
+                                    <option value="">Select Difficulty</option>
+                                    <option th:each="difficulty : ${difficulties}"
+                                            th:value="${difficulty}"
+                                            th:text="${difficulty}">Difficulty</option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('difficulty')}" class="text-danger">
+                                    <span th:errors="*{difficulty}">Difficulty error</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Status *</label>
+                                <select class="form-select" id="status" th:field="*{status}" required>
+                                    <option th:each="status : ${statuses}"
+                                            th:value="${status}"
+                                            th:text="${status}">Status</option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('status')}" class="text-danger">
+                                    <span th:errors="*{status}">Status error</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="platform" class="form-label">Platform *</label>
+                                <select class="form-select" id="platform" th:field="*{platform}" required>
+                                    <option th:each="platform : ${platforms}"
+                                            th:value="${platform}"
+                                            th:text="${platform}">Platform</option>
+                                </select>
+                                <div th:if="${#fields.hasErrors('platform')}" class="text-danger">
+                                    <span th:errors="*{platform}">platform error</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="problemUrl" class="form-label">Problem URL *</label>
+                            <input type="url" class="form-control" id="problemUrl" th:field="*{problemUrl}"
+                                   placeholder="https://leetcode.com/problems/..." required>
+                            <div th:if="${#fields.hasErrors('problemUrl')}" class="text-danger">
+                                <span th:errors="*{problemUrl}">URL error</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="solutionUrl" class="form-label">Solution URL</label>
+                            <input type="url" class="form-control" id="solutionUrl" th:field="*{solutionUrl}"
+                                   placeholder="https://github.com/...">
+                            <div th:if="${#fields.hasErrors('solutionUrl')}" class="text-danger">
+                                <span th:errors="*{solutionUrl}">Solution URL error</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description *</label>
+                            <textarea class="form-control" id="description" th:field="*{description}"
+                                      rows="3" placeholder="Problem description..." required></textarea>
+                            <div th:if="${#fields.hasErrors('description')}" class="text-danger">
+                                <span th:errors="*{description}">Description error</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" th:field="*{notes}"
+                                      rows="3" placeholder="Additional notes, approach, time complexity..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a th:href="@{/problems}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <span th:text="${problem.id} ? 'Update Problem' : 'Add Problem'">Submit</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
