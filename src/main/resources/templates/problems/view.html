@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title th:if="${problem != null}" th:text="${problem.title}">Problem Details</title>
+    <title th:unless="${problem != null}">Problem Not Found</title>
+    <style>
+        .timer-display {
+            font-size: 2rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #dc3545;
+        }
+        .timer-running {
+            background-color: #fff3cd !important;
+            border-left: 4px solid #ffc107 !important;
+        }
+        .btn-start {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+        .btn-stop {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+        .btn-complete {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+            color: white;
+        }
+        #activeState, #inProgressState, #completedState {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+    <div th:if="${problem != null}">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 th:text="${problem.title}">Problem Title</h1>
+            <div>
+                <a th:href="@{/problems/{id}/edit(id=${problem.id})}" class="btn btn-warning">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <a th:href="@{/problems}" class="btn btn-secondary">Back to List</a>
+            </div>
+        </div>
+        <div class="card mb-4" th:if="${problem.nextReviewDate == null}">
+            <div class="card-body text-center">
+                <p class="text-muted">This problem is not in your schedule yet.</p>
+                <form th:action="@{/problems/{id}/add-to-schedule(id=${problem.id})}" method="post">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add to Daily Schedule
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Problem Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text" th:text="${problem.description}">Description</p>
+
+                        <div class="mb-3">
+                            <strong>Topic:</strong>
+                            <span class="badge bg-secondary" th:text="${problem.topic}">Topic</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Difficulty:</strong>
+                            <span class="badge"
+                                  th:classappend="${problem.difficulty eq T(dsa.sheduler.dsa_sheduler_app.Entity.Problem.Difficulty).EASY} ? 'bg-success' :
+                                             (${problem.difficulty eq T(dsa.sheduler.dsa_sheduler_app.Entity.Problem.Difficulty).MEDIUM} ? 'bg-warning' : 'bg-danger')"
+                                  th:text="${problem.difficulty}">Difficulty</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Status:</strong>
+                            <span class="badge" data-status-badge
+                                  th:classappend="${problem.status eq T(dsa.sheduler.dsa_sheduler_app.Entity.Problem.Status).COMPLETED} ? 'bg-success' :
+                                             (${problem.status eq T(dsa.sheduler.dsa_sheduler_app.Entity.Problem.Status).IN_PROGRESS} ? 'bg-primary' :
+                                             (${problem.status eq T(dsa.sheduler.dsa_sheduler_app.Entity.Problem.Status).PENDING} ? 'bg-warning' : 'bg-danger'))"
+                                  th:text="${problem.status}">Status</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Review Count:</strong>
+                            <span class="badge bg-secondary" th:text="${problem.reviewCount}">Review Count:</span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="card mb-4" th:if="${problem.notes != null and !#strings.isEmpty(problem.notes)}">
+                    <div class="card-header">
+                        <h5>Notes & Approach</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text" th:text="${problem.notes}">Notes</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Links</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a th:href="${problem.problemUrl}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt"></i> View Problem
+                            </a>
+                            <a th:if="${problem.solutionUrl != null and !#strings.isEmpty(problem.solutionUrl)}"
+                               th:href="${problem.solutionUrl}" target="_blank" class="btn btn-success">
+                                <i class="fas fa-code"></i> View Solution
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timer Section -->
+                <div class="card mb-4" id="timerCard"
+                     th:attr="data-problem-id=${problem.id}, data-problem-status=${problem.status}">
+                    <div class="card-header">
+                        <h5>Practice Timer</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <!-- Initial State - When problem is PENDING -->
+                        <div id="pendingState">
+                            <div class="timer-display mb-3">45:00</div>
+                            <p class="text-muted">Ready to start practicing this problem?</p>
+                            <button type="button" class="btn btn-start btn-lg" onclick="startTimer()" data-action="start-timer">
+                                <i class="fas fa-play"></i> Start Practice
+                            </button>
+                        </div>
+
+                        <!-- Active Timer State -->
+                        <div id="activeState">
+                            <div class="timer-display mb-3" id="timerDisplay">45:00</div>
+                            <p class="text-muted" id="timerStatus">Time remaining...</p>
+                            <div class="btn-group w-100">
+                                <button type="button" class="btn btn-stop" onclick="stopTimer()" data-action="stop-timer">
+                                    <i class="fas fa-stop"></i> Stop
+                                </button>
+                                <button type="button" class="btn btn-complete" onclick="completeProblem()" data-action="complete-problem">
+                                    <i class="fas fa-check"></i> Complete
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Completed State -->
+                        <div id="completedState">
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> This problem has been completed!
+                            </div>
+                            <form th:action="@{/problems/{id}/reset-status(id=${problem.id})}" method="post">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-redo"></i> Reset to Pending
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- In Progress but no active timer -->
+                        <div id="inProgressState">
+                            <div class="timer-display mb-3">45:00</div>
+                            <p class="text-muted">Session in progress. Start timer to continue.</p>
+                            <div class="btn-group w-100">
+                                <button type="button" class="btn btn-start" onclick="startTimer()" data-action="start-timer">
+                                    <i class="fas fa-play"></i> Resume Timer
+                                </button>
+                                <button type="button" class="btn btn-complete" onclick="completeProblem()" data-action="complete-problem">
+                                    <i class="fas fa-check"></i> Complete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Timeline</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="small">
+                            <div class="mb-2">
+                                <strong>Created:</strong><br>
+                                <span th:text="${#temporals.format(problem.createdAt)}">Created At</span>
+                            </div>
+                            <div th:if="${problem.updatedAt != null}">
+                                <strong>Last Updated:</strong><br>
+                                <span th:text="${#temporals.format(problem.updatedAt)}">Updated At</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:unless="${problem != null}" class="alert alert-warning">
+        <h4>Problem Not Found</h4>
+        <p>The requested problem could not be found.</p>
+        <a th:href="@{/problems}" class="btn btn-primary">Back to Problems List</a>
+    </div>
+</div>
+
+<!-- Include the external JavaScript file -->
+<script th:src="@{/timer.js}"></script>
+</body>
+</html>

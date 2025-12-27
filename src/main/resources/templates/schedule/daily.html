@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Today's Schedule</title>
+    <style>
+        .problem-card { transition: all 0.3s; }
+        .completed-card {
+            opacity: 0.8;
+            background-color: #d4edda;
+            border-left: 4px solid #28a745 !important;
+        }
+        .pending-card {
+            border-left: 4px solid #ffc107 !important;
+        }
+        .streak-badge { background-color: #ff6b00; }
+        .review-badge { background-color: #17a2b8; }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-calendar-day"></i> Today's Schedule
+            <small class="text-muted" th:text="${#temporals.format(today)}"></small>
+        </h1>
+        <div>
+            <a th:href="@{/schedule/refresh}" class="btn btn-outline-primary">
+                <i class="fas fa-sync-alt"></i> Refresh Schedule
+            </a>
+            <a th:href="@{/problems}" class="btn btn-secondary">All Problems</a>
+        </div>
+    </div>
+
+    <!-- Progress Summary - FIXED: Using proper Thymeleaf syntax -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 th:text="${dailyProblems != null ? dailyProblems.size() : 0}">0</h3>
+                    <p class="text-muted">Today's Problems</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 th:text="${dailyProblems != null ? #lists.size(dailyProblems.?[completed]) : 0}">0</h3>
+                    <p class="text-muted">Completed Today</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 th:text="${dailyProblems != null ? #lists.size(dailyProblems.?[!completed]) : 0}">0</h3>
+                    <p class="text-muted">Pending</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 th:text="${dailyProblems != null ? #lists.size(dailyProblems.?[reviewCount > 0]) : 0}">0</h3>
+                    <p class="text-muted">Review Items</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Problems - FIXED: Proper completion status display -->
+    <div th:if="${dailyProblems != null and !dailyProblems.empty}" class="row">
+        <div th:each="problem : ${dailyProblems}" class="col-md-6 mb-4">
+            <div class="card problem-card h-100"
+                 th:classappend="${problem.completed} ? 'completed-card' : 'pending-card'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title" th:text="${problem.title}">Problem Title</h5>
+                        <div>
+                            <!-- Completion Status Badge -->
+                            <span th:if="${problem.completed}" class="badge bg-success me-1">
+                                <i class="fas fa-check"></i> Completed
+                            </span>
+                            <span th:unless="${problem.completed}" class="badge bg-warning me-1">
+                                <i class="fas fa-clock"></i> Pending
+                            </span>
+
+                            <span th:if="${problem.reviewCount > 0}"
+                                  class="badge review-badge me-1"
+                                  th:text="'Review ' + ${problem.reviewCount}">Review</span>
+                            <span th:if="${problem.streak > 0}"
+                                  class="badge streak-badge"
+                                  th:text="'Streak: ' + ${problem.streak}">Streak</span>
+                        </div>
+                    </div>
+
+                    <p class="card-text text-muted small" th:text="${problem.description}">Description</p>
+
+                    <div class="mb-2">
+                        <span class="badge bg-secondary" th:text="${problem.topic}">Topic</span>
+                        <span class="badge"
+                              th:classappend="${problem.difficulty eq T(dsa.sheduler.dsa_sheduler_app.Entity.Problem.Difficulty).EASY} ? 'bg-success' :
+                                             (${problem.difficulty eq T(dsa.sheduler.dsa_sheduler_app.Entity.Problem.Difficulty).MEDIUM} ? 'bg-warning' : 'bg-danger')"
+                              th:text="${problem.difficulty}">Difficulty</span>
+                    </div>
+
+                    <div th:if="${problem.nextReviewDate != null}" class="small mb-3">
+                        <strong>Next Review:</strong>
+                        <span th:text="${#temporals.format(problem.nextReviewDate)}">Date</span>
+                    </div>
+
+                    <!-- Action Buttons - Show appropriate button based on current status -->
+                    <div class="btn-group w-100">
+                        <a th:href="@{/problems/{id}(id=${problem.id})}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+
+                        <!-- Show Complete button only if NOT completed -->
+                        <form th:if="${!problem.completed}"
+                              th:action="@{/schedule/complete/{id}(id=${problem.id})}"
+                              method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i class="fas fa-check"></i> Mark Complete
+                            </button>
+                        </form>
+
+                        <!-- Show Redo button only if IS completed -->
+                        <form th:if="${problem.completed}"
+                              th:action="@{/schedule/incomplete/{id}(id=${problem.id})}"
+                              method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-warning">
+                                <i class="fas fa-redo"></i> Mark Incomplete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${dailyProblems == null or dailyProblems.empty}" class="alert alert-info">
+        <h4>No problems scheduled for today!</h4>
+        <p>All caught up! You can add more problems or check back tomorrow for new scheduled problems.</p>
+        <a th:href="@{/problems/new}" class="btn btn-primary">Add New Problem</a>
+    </div>
+
+    <!-- Debug Information (remove in production) -->
+    <div class="mt-4 p-3 bg-light rounded">
+        <h6>Debug Info:</h6>
+        <p>Total Problems: <span th:text="${dailyProblems != null ? dailyProblems.size() : 0}">0</span></p>
+        <p>Completed Count: <span th:text="${dailyProblems != null ? #lists.size(dailyProblems.?[completed]) : 0}">0</span></p>
+        <p>Pending Count: <span th:text="${dailyProblems != null ? #lists.size(dailyProblems.?[!completed]) : 0}">0</span></p>
+    </div>
+</div>
+</body>
+</html>

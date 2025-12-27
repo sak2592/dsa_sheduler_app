@@ -1,0 +1,8 @@
+package dsa.sheduler.dsa_sheduler_app.Entity;
+
+public enum Topic {
+
+    ARRAY, STRING, LINKED_LIST, STACK, QUEUE, TREE, GRAPH,
+    DYNAMIC_PROGRAMMING, BACKTRACKING, GREEDY, BINARY_SEARCH,
+    HEAP, HASH_TABLE, MATH, BIT_MANIPULATION
+}
